@@ -1,14 +1,29 @@
-import pickle
-import numpy as np
-import pandas as pd
-from io import StringIO
-from pydantic import BaseModel
-from fastapi import FastAPI, File, Form, UploadFile
+# references
+# https://pydantic-docs.helpmanual.io/usage/validators/
 
-app = FastAPI()
-# app = FastAPI(title='SMART Data Science Application',
-#               description='A Smart Data Science Application running on FastAPI + uvicorn',
-#               version='0.0.1')
+# import pickle
+
+# import numpy as np
+from fastapi import FastAPI
+import pandas as pd
+
+# from fastapi import FastAPI, File, Form, UploadFile
+from pydantic import BaseModel, validator
+
+# internal dependencies
+from .ml.model import CreditRisk_Classifier, get_input_column_names
+
+# from enum import Enum
+# from io import StringIO
+
+
+# create fastapi app
+app = FastAPI(
+    title="Credit risk prediction API",
+    description="A Smart Data Science Application running on FastAPI + uvicorn \
+                  for credit risk classification",
+    version="1.0.0",
+)
 
 
 class ClientProfile(BaseModel):
@@ -32,14 +47,24 @@ class ClientProfile(BaseModel):
     num_dependents: int
     own_telephone: str
     foreign_worker: str
+    model_version: str
+
+    @validator("model_version")
+    def check_model_version_value(self, v):
+        if v not in ["v0", "v1", "v2"]:
+            raise ValueError("model_version equal to 'v0', 'v1' or 'v2'")
+        return v.lower()
 
 
 @app.post("/predict")
 async def predict_risk(client: ClientProfile):
     data = client.dict()
 
-    # load the model saved as a pickle
-    loaded_model = pickle.load(open("classifier.pkl", "rb"))
+    # init classifier object
+    classifier = CreditRisk_Classifier()
+
+    # load the model saved as a pickle. load model based on the version choosed
+    loaded_model = classifier.load_model(data["model_version"])
 
     # store the list of list
     data_in = [
@@ -67,10 +92,14 @@ async def predict_risk(client: ClientProfile):
         ]
     ]
 
+    # load input data in a dataframe
+    df_input = pd.DataFrame(data_in, columns=get_input_column_names())
+
     # preprocess the entry
+    X_input = df_input  # to be preprocess
 
     # get the class and probability using the model
-    prediction = loaded_model.predict(data_in)
+    prediction = loaded_model.predict(X_input)
     probability = loaded_model.predict_proba(data_in).max()
 
     return {"prediction": prediction[0], "probability": probability}
