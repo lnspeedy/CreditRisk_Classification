@@ -51,9 +51,10 @@ class ClientProfile(BaseModel):
 
     @validator("model_version")
     def check_model_version_value(self, v):
+        v = v.lower()
         if v not in ["v0", "v1", "v2"]:
             raise ValueError("model_version equal to 'v0', 'v1' or 'v2'")
-        return v.lower()
+        return v
 
 
 @app.post("/predict")
