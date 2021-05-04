@@ -101,7 +101,7 @@ async def predict_risk(client: ClientProfile):
 
     # get the class and probability using the model
     prediction = loaded_model.predict(X_input)
-    probability = loaded_model.predict_proba(data_in).max()
+    probability = loaded_model.predict_proba(X_input).max()
 
     return {"prediction": prediction[0], "probability": probability}
 

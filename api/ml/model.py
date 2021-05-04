@@ -2,6 +2,7 @@ import pickle
 from pathlib import Path
 
 import numpy as np
+import datetime
 from sklearn.datasets import load_boston
 from sklearn.ensemble import RandomForestRegressor, LogisticRegression
 
@@ -18,10 +19,10 @@ class CreditRisk_Classifier:
         #self._model_name = "logistic_regression"
 
     def train(self, X: np.ndarray, y: np.ndarray):
-        self._model = LogisticRegression(
-             C=0.1, max_iter=20, fit_intercept=True, n_jobs=3, solver="liblinear"
-        )
-
+        if self._model is None:
+            self._model = LogisticRegression(
+                C=0.1, max_iter=20, fit_intercept=True, n_jobs=3, solver="liblinear"
+            )
         # fit standadizer --> save it
 
         # fit the model
@@ -32,6 +33,9 @@ class CreditRisk_Classifier:
     def predict(self, X: np.ndarray) -> np.ndarray:
         return self._model.predict(X)
 
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        return self._model.predict_proba(X)
+
     def pipeline_preprocess(self):
         pass
 
@@ -39,8 +43,8 @@ class CreditRisk_Classifier:
         if self._model is not None:
             # save the old model first before pushing the new file
             key_model_historic = self._model_path.split(".")[0]
-            date = ""
-            filename_hist = f"{key_model_historic}_{date}.pkl"
+            date, hour = str(datetime.datetime.now()).split()
+            filename_hist = f"{key_model_historic}_{date}_{hour}.pkl"
 
             # push the model in the disk using the model path
             with open(self._model_path, "wb") as file:
