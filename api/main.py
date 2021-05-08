@@ -3,14 +3,16 @@
 
 # import pickle
 
+import pandas as pd
+
 # import numpy as np
 from fastapi import FastAPI
-import pandas as pd
 
 # from fastapi import FastAPI, File, Form, UploadFile
 from pydantic import BaseModel, validator
 
 # internal dependencies
+from .ml.model import CreditRisk_Preprocess_Predict
 from .ml.model import CreditRisk_Classifier, get_input_column_names
 
 # from enum import Enum
@@ -58,13 +60,11 @@ class ClientProfile(BaseModel):
 
 @app.post("/predict")
 async def predict_risk(client: ClientProfile):
+    # load the api input 
     data = client.dict()
 
-    # init classifier object
-    classifier = CreditRisk_Classifier()
-
-    # load the model saved as a pickle. load model based on the version choosed
-    loaded_model = classifier.load_model(data["model_version"])
+    # model version choosed by the user
+    model_version = data["model_version"]
 
     # store the list of list
     data_in = [
@@ -96,7 +96,21 @@ async def predict_risk(client: ClientProfile):
     df_input = pd.DataFrame(data_in, columns=get_input_column_names())
 
     # preprocess the entry
-    X_input = df_input  # to be preprocess
+    preprocess_pipe = CreditRisk_Preprocess_Predict(df_input)
+
+    # prepare features to be passed to the classifier based on the model version 
+    if model_version.lower() == 'v0':
+        # do a scaling on numerical inputs
+        X_input = preprocess_pipe.prepare_input_features()
+    else:
+        # no scaling on the numerical inputs 
+        X_input = preprocess_pipe.prepare_input_features()
+
+    # init classifier object
+    classifier = CreditRisk_Classifier()
+
+    # load the model saved as a pickle. load model based on the version choosed
+    loaded_model = classifier.load_model(model_version)
 
     # get the class and probability using the model
     prediction = loaded_model.predict(X_input)
