@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import pickle
 from sklearn.pipeline import FeatureUnion, Pipeline
 from sklearn.preprocessing import StandardScaler
 from .utils import CreditRiskException
@@ -51,6 +52,7 @@ def get_num_columns():
 class CreditRisk_Preprocess:
     def __init__(self):
         self.training_data_folder = ""
+        self.model_folder = ""
         self.columns_type = {
             "checking_status": "str",
             "employment": "str",
@@ -77,26 +79,6 @@ class CreditRisk_Preprocess:
         }
 
     self.missing_values = ["n/a", "na", "--", "NaN", "nan", "N/A"]
-
-    def load_data(self):
-        """ Method to load credit risk dataset for further processing """
-
-        try:
-            # data path
-            path_data = os.path.join(self.training_data_folder, "credit_data.csv")
-
-            # load data in a dataframe
-            df_train = pd.read_csv(
-                path_data, encoding=encoding, na_values=self.missing_values
-            )
-
-            # update columns data type
-            df_train = df_train.astype(self.columns_type)
-
-        except Exception as e:
-            raise CreditRiskException("load_data", str(e))
-
-        return df_train
 
     def _cat_pipeline_preprocess(self, cat_attribs):
 
@@ -145,15 +127,52 @@ class CreditRisk_Preprocess_Train(CreditRisk_Preprocess):
     def __init__(self, use_scaler):
         self.use_scaler = use_scaler
 
-    def prepare_training_features(self, training_data_folder):
+    def load_training_data(self):
+        """ Method to load credit risk dataset for further processing """
+
+        try:
+            # data path
+            path_data = os.path.join(self.training_data_folder, "credit_data.csv")
+
+            # load data in a dataframe
+            df_train = pd.read_csv(
+                path_data, encoding=encoding, na_values=self.missing_values
+            )
+
+            # update columns data type
+            df_train = df_train.astype(self.columns_type)
+
+        except Exception as e:
+            raise CreditRiskException("load_training_data", str(e))
+
+        return df_train
+
+    def prepare_training_features(self):
         """ Methode to preprocess and save preprocessing pipeline """
 
-        return
+        # load training data 
+        df_train = self.load_training_data()
+        
+        # preprocess and transform 
+        try:
+            df_preprocess_train = self.full_pipeline_preprocess.fit_transform(df_train)
 
-    def _save_preprocess_pipeline():
+            # save the preprocess pipeline
+            file_tag = 'scaled' if self.use_scaler else 'unscaled' # extract a file tag based on the preprocessing needed
+            file_name = os.path.join(self.model_folder, f'preprocess_pipe_{file_tag}.pkl')
+            self._save_preprocess_pipeline(self.full_pipeline_preprocess, file_name) # save 
+
+        except Exception as e:
+            raise CreditRiskException("prepare_training_features", str(e))
+
+        return df_preprocess_train
+
+    def _save_preprocess_pipeline(self, pipe_obj, file_name):
         """ Method to save the preprocessing pipeline """
+        
+        pickle.dump(pipe_obj, open(file_name, 'wb'))
 
-        return
+        return True
 
 
 class CreditRisk_Preprocess_Predict(CreditRisk_Preprocess):
@@ -161,22 +180,20 @@ class CreditRisk_Preprocess_Predict(CreditRisk_Preprocess):
         self.use_scaler = use_scaler
         self.df_input = df_input
 
-    def _load_preprocess_pipe(use_scaler):
+    def _load_preprocess_pipe(self):
 
         # get the preprocess pipeline path
-
-        # load the pickle object
-        # raise an exception if can't load the pipe
-
-        return
+        file_tag = 'scaled' if self.use_scaler else 'unscaled' # extract a file tag based on the preprocessing needed
+        file_name = os.path.join(self.model_folder, f'preprocess_pipe_{file_tag}.pkl')
+        
+        return pickle.load(open(file_name, 'rb'))
 
     def prepare_input_features(self, df_input, use_scaler):
 
         # load pipe
+        preprocess_pipe = self._load_preprocess_pipe()
 
         # do a transform
+        df_input_features = preprocess_pipe.transform(df_input)
 
-        # return the preprocess df on inputs
-        df_input_features = None
-
-        return
+        return df_input_features
