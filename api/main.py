@@ -1,31 +1,24 @@
 # references
 # https://pydantic-docs.helpmanual.io/usage/validators/
 
-# import pickle
-
-# import numpy as np
-from fastapi import FastAPI
 import pandas as pd
-
-# from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI
 from pydantic import BaseModel, validator
-
-# internal dependencies
-from .ml.model import CreditRisk_Classifier, get_input_column_names
-
-# from enum import Enum
-# from io import StringIO
-
+from .ml.model import CreditRisk_Classifier, CreditRisk_Preprocess_Predict, get_input_column_names
+from .ml.config import Settings
 
 # create fastapi app
 app = FastAPI(
     title="Credit risk prediction API",
     description="A Smart Data Science Application running on FastAPI + uvicorn \
                   for credit risk classification",
-    version="1.0.0",
+    version="1.0.0"
 )
 
+# init app settings 
+settings = Settings()
 
+# user input templates 
 class ClientProfile(BaseModel):
     checking_status: str
     duration: int
@@ -56,16 +49,13 @@ class ClientProfile(BaseModel):
             raise ValueError("model_version equal to 'v0', 'v1' or 'v2'")
         return v
 
-
 @app.post("/predict")
 async def predict_risk(client: ClientProfile):
+    # load the api input
     data = client.dict()
 
-    # init classifier object
-    classifier = CreditRisk_Classifier()
-
-    # load the model saved as a pickle. load model based on the version choosed
-    loaded_model = classifier.load_model(data["model_version"])
+    # model version choosed by the user
+    model_version = data["model_version"]
 
     # store the list of list
     data_in = [
@@ -97,7 +87,21 @@ async def predict_risk(client: ClientProfile):
     df_input = pd.DataFrame(data_in, columns=get_input_column_names())
 
     # preprocess the entry
-    X_input = df_input  # to be preprocess
+    preprocess_pipe = CreditRisk_Preprocess_Predict(df_input)
+
+    # prepare features to be passed to the classifier based on the model version
+    if model_version.lower() == "v0":
+        # do a scaling on numerical inputs
+        X_input = preprocess_pipe.prepare_input_features()
+    else:
+        # no scaling on the numerical inputs
+        X_input = preprocess_pipe.prepare_input_features()
+
+    # init classifier object
+    classifier = CreditRisk_Classifier()
+
+    # load the model saved as a pickle. load model based on the version choosed
+    loaded_model = classifier.load_model(model_version)
 
     # get the class and probability using the model
     prediction = loaded_model.predict(X_input)
@@ -105,17 +109,5 @@ async def predict_risk(client: ClientProfile):
 
     return {"prediction": prediction[0], "probability": probability}
 
-
-# # endpoint to process a file as the input
-# @app.post("/files/")
-# async def create_file(file: bytes = File(...), token: str = Form(...)):
-#     s=str(file,'utf-8')
-#     data = StringIO(s)
-#     df=pd.read_csv(data)
-#     print(df)
-
-#     #return df
-#     return {
-#         "file": df,
-#         "token": token,
-#     }
+if __name__ == '__main__':
+    uvicorn.run(app, workers=1, host=settings.host, port=settings.memory_port)
