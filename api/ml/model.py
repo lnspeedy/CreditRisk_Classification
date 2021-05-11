@@ -4,29 +4,27 @@ from pathlib import Path
 import numpy as np
 import datetime
 from sklearn.datasets import load_boston
-from sklearn.ensemble import RandomForestRegressor, LogisticRegression
+from ..workflow_training import train_classifier
+from sklearn.ensemble import RandomForestClassifier, LogisticRegression
 
 
 class CreditRisk_Classifier:
-    def __init__(self, model_path: str = None):
+    def __init__(self, version: str = "v0"):
         self._model = None
-        self._model_path = model_path
+        self._version = version
         parent_path = Path(__file__).parent
-        self._paths = { "v0" : parent_path / "classifier_v0.pkl",
-                        "v1": parent_path / "classifier_v1.pkl",
-                        "v2": parent_path / "classifier_v2.pkl"}
+        self._paths = {"v0": parent_path / "classifier_v0.pkl",
+                       "v1": parent_path / "classifier_v1.pkl",
+                       "v2": parent_path / "classifier_v2.pkl"}
+        self._model_path = self._paths[version]
+        
         #self.load()
         #self._model_name = "logistic_regression"
 
     def train(self, X: np.ndarray, y: np.ndarray):
         if self._model is None:
-            self._model = LogisticRegression(
-                C=0.1, max_iter=20, fit_intercept=True, n_jobs=3, solver="liblinear"
-            )
-        # fit standadizer --> save it
-
-        # fit the model
-        self._model.fit(X, y)
+            self._model = train_classifier(X,y,self._version)
+            self.save()
 
         return self
 
