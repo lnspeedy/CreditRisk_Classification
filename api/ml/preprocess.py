@@ -2,10 +2,11 @@ import os
 import pandas as pd
 import pickle
 from sklearn.pipeline import FeatureUnion, Pipeline
+from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
-from .utils import CreditRiskException
+from api.ml.utils import CreditRiskException, ExtractClientProfile, DataFrameSelector, DataFrameValues, CategoticalEncoding
 
-from .config import Settings
+from api.config import Settings
 
 # use utf-8 as the encoding
 encoding = "utf-8"
@@ -78,17 +79,16 @@ class CreditRisk_Preprocess:
             "num_dependents": "int",
         }
 
-    self.missing_values = ["n/a", "na", "--", "NaN", "nan", "N/A"]
+        self.missing_values = ["n/a", "na", "--", "NaN", "nan", "N/A"]
 
     def _cat_pipeline_preprocess(self, cat_attribs):
 
         cat_pipeline = Pipeline(
             [
                 ("selector", DataFrameSelector(cat_attribs)),
-                ("cat_encoder", OneHotEncoder(sparse=False)),
+                ("cat_encoder", CategoticalEncoding(sparse=False))
             ]
         )
-
         return cat_pipeline
 
     def _num_pipeline_preprocess(self, num_attribs, use_scaler):
@@ -96,8 +96,8 @@ class CreditRisk_Preprocess:
         num_pipeline = Pipeline(
             [
                 ("selector", DataFrameSelector(num_attribs)),
-                ("imputer", SimpleImputer(strategy="median")),
-                ("attribs_adder", CombinedAttributesAdder()),
+                ("extract_new_features", ExtractClientProfile())
+                ("imputer", SimpleImputer(strategy="median"))
             ]
         )
 
@@ -117,10 +117,6 @@ class CreditRisk_Preprocess:
         )
 
         return full_pipeline
-
-    def prepare_input_data(self):
-        """ Prepare data to be use to predict or train using credit data """
-        return
 
 
 class CreditRisk_Preprocess_Train(CreditRisk_Preprocess):
@@ -176,7 +172,7 @@ class CreditRisk_Preprocess_Train(CreditRisk_Preprocess):
 
 
 class CreditRisk_Preprocess_Predict(CreditRisk_Preprocess):
-    def __init__(self, df_input):
+    def __init__(self, df_input, use_scaler):
         self.use_scaler = use_scaler
         self.df_input = df_input
 
@@ -188,7 +184,7 @@ class CreditRisk_Preprocess_Predict(CreditRisk_Preprocess):
         
         return pickle.load(open(file_name, 'rb'))
 
-    def prepare_input_features(self, df_input, use_scaler):
+    def prepare_input_features(self, df_input):
 
         # load pipe
         preprocess_pipe = self._load_preprocess_pipe()
