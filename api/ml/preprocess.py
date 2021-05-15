@@ -3,14 +3,12 @@ import pandas as pd
 import pickle
 from sklearn.pipeline import FeatureUnion, Pipeline
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler
-from api.ml.utils import CreditRiskException, ExtractClientProfile, DataFrameSelector, DataFrameValues, CategoticalEncoding
-
+from sklearn.preprocessing import StandardScaler, OneHotEncoder 
+from api.ml.utils import CreditRiskException, ExtractClientProfile, DataFrameSelector, DataFrameValues
 from api.config import Settings
 
 # use utf-8 as the encoding
 encoding = "utf-8"
-
 
 def get_cat_columns():
     """ Method to get all categorical colummns for the credit risk dataset """
@@ -20,9 +18,7 @@ def get_cat_columns():
         "employment",
         "credit_history",
         "purpose",
-        "savings_status",
-        "sex",
-        "status_matrimonial",
+        "personal_status",
         "other_parties",
         "property_magnitude",
         "other_payment_plans",
@@ -31,6 +27,7 @@ def get_cat_columns():
         "own_telephone",
         "foreign_worker",
         "class",
+        "savings_status"
     ]
     return columns_cat
 
@@ -48,7 +45,6 @@ def get_num_columns():
         "num_dependents",
     ]
     return columns_num
-
 
 class CreditRisk_Preprocess:
     def __init__(self):
@@ -81,43 +77,41 @@ class CreditRisk_Preprocess:
 
         self.missing_values = ["n/a", "na", "--", "NaN", "nan", "N/A"]
 
-    def _cat_pipeline_preprocess(self, cat_attribs):
+    def _cat_pipeline_preprocess(self):
 
         cat_pipeline = Pipeline(
             [
-                ("selector", DataFrameSelector(cat_attribs)),
-                ("cat_encoder", CategoticalEncoding(sparse=False))
+                ("selector", DataFrameSelector(get_cat_columns())),
+                ("extract_new_features", ExtractClientProfile()),
+                ("cat_encoder", OneHotEncoder())
             ]
         )
         return cat_pipeline
 
-    def _num_pipeline_preprocess(self, num_attribs, use_scaler):
+    def _num_pipeline_preprocess(self, use_scaler):
 
         num_pipeline = Pipeline(
             [
-                ("selector", DataFrameSelector(num_attribs)),
-                ("extract_new_features", ExtractClientProfile())
+                ("selector", DataFrameSelector(get_num_columns())),
                 ("imputer", SimpleImputer(strategy="median"))
             ]
         )
-
         if use_scaler:
             # add a scaling step in the num pipeline
             num_pipeline.steps.append(["std_scaler", StandardScaler()])
 
         return num_pipeline
 
-    def full_pipeline_preprocess(self, num_attribs, cat_attribs, use_scaler):
+    def full_pipeline_preprocess(self, use_scaler):
 
         full_pipeline = FeatureUnion(
             transformer_list=[
-                ("num_pipeline", self._num_pipeline_preprocess(num_attribs, use_scaler)),
-                ("cat_pipeline", self._cat_pipeline_preprocess(cat_attribs)),
+                ("num_pipeline", self._num_pipeline_preprocess(use_scaler)),
+                ("cat_pipeline", self._cat_pipeline_preprocess())
             ]
         )
 
         return full_pipeline
-
 
 class CreditRisk_Preprocess_Train(CreditRisk_Preprocess):
     def __init__(self, use_scaler):
@@ -128,7 +122,7 @@ class CreditRisk_Preprocess_Train(CreditRisk_Preprocess):
 
         try:
             # data path
-            path_data = os.path.join(self.training_data_folder, "credit_data.csv")
+            path_data = os.path.join(self.training_data_folder, "train_data.csv")
 
             # load data in a dataframe
             df_train = pd.read_csv(
@@ -169,7 +163,6 @@ class CreditRisk_Preprocess_Train(CreditRisk_Preprocess):
         pickle.dump(pipe_obj, open(file_name, 'wb'))
 
         return True
-
 
 class CreditRisk_Preprocess_Predict(CreditRisk_Preprocess):
     def __init__(self, df_input, use_scaler):

@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel, validator
 from api.ml.model import CreditRisk_Classifier, CreditRisk_Preprocess_Predict, get_input_column_names
 from api.config import Settings
+import uvicorn
 
 # create fastapi app
 app = FastAPI(
