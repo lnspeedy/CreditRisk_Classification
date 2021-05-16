@@ -5,7 +5,7 @@ import os
 
 
 
-def download_feed(): 
+def download_feed(target_folder): 
     try:
         #download dataset
         data = pd.read_csv('https://datahub.io/machine-learning/credit-g/r/credit-g.csv')
