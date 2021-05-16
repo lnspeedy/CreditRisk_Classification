@@ -12,5 +12,4 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /api
 EXPOSE 80
 
-
 CMD python3 workflow_training.py
