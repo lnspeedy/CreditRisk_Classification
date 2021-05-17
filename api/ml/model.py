@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import datetime
 from sklearn.datasets import load_boston
-from ..workflow_training import train_classifier
+from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier, LogisticRegression
 
 
@@ -17,16 +17,43 @@ class CreditRisk_Classifier:
                        "v1": parent_path / "classifier_v1.pkl",
                        "v2": parent_path / "classifier_v2.pkl"}
         self._model_path = self._paths[version]
-        
+
         #self.load()
         #self._model_name = "logistic_regression"
 
     def train(self, X: np.ndarray, y: np.ndarray):
         if self._model is None:
-            self._model = train_classifier(X,y,self._version)
+
+            # 3 versions of the model to train here
+            if self._version == "v0":
+                model = LogisticRegression()
+                params = {'penalty': ['none'],
+                          'C': [1,0],
+                          'max_iter': 82,
+                          'solver' : ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']
+                         }
+
+            elif self._version == "v1":
+                model = RandomForestClassifer()
+                params = {'n_estimators' : range(105, 120),
+                          'ccp_alpha': np.linspace(0, 2, 10),
+                          'min_samples_split': [2],
+                          'min_samples_leaf' : [1],
+                          'min_weight_fraction_leaf' : np.linspace(0, 5, 15)
+                         }
+
+            elif self._version == "v2":
+                pass
+
+            self._model = self.best_model(X, y, model, params)
+
             self.save()
 
-        return self
+
+    def best_model(self, X, y, model, params, cv=5, njobs=-1):
+        gs = GridSearchCV(model, params, cv=cv, njobs=njobs)
+        fitted_model = gs.fit(X,y)
+        return gs.best_estimator_
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         return self._model.predict(X)

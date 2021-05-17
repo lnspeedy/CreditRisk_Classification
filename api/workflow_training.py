@@ -1,24 +1,50 @@
+import sys
 import numpy as np
+import pandas as pd
+from absl import flags
+from .ml.preprocess import CreditRiskException, CreditRisk_Preprocess_Predict
+from .ml.model import CreditRisk_Classifier
 
-from sklearn.ensemble import RandomForestClassifer, LogisticRegression
+FLAGS = flags.FLAGS
+flags.DEFINE_string('model_version', None, 'version of the classifier to train')
+flags.DEFINE_string('train_file', None, 'train file path.')
+flags.DEFINE_string('test_file', None, 'test file path.')
+
+FLAGS(sys.argv)
+
+def main(*args):
+
+    try:
+        if not FLAGS.model_version:
+            raise ValueError('You must supply the model version with --model_version')
+        if not FLAGS.train_file:
+            raise ValueError('You must supply a train directory path with --train_file')
+        if not FLAGS.test_file:
+            raise ValueError('You must supply a train directory path with --test_file')
+
+        df_train = pd.read_csv(FLAGS.train_file)
+        df_test = pd.read_csv(FLAGS.test_file)
+
+        #Preprocess the entries
+        preprocess_pipe_train = CreditRisk_Preprocess_Predict(df_train)
+        preprocess_pipe_test = CreditRisk_Preprocess_Predict(df_test)
+        df_train_prep = preprocess_pipe_train.prepare_input_features()
+        df_test_prep = preprocess_pipe_test.prepare_input_features()
+        y_train = df_train_prep['class']
+        X_train = df_train_prep.drop(columns=['class'])
+        y_test = df_test_prep['class']
+        X_test = df_test_prep.drop(columns=['class'])
+
+        #Load the corresponding model to train
+        model = CreditRisk_Classifier(FLAGS.model_version)
+        model.train(X_train, y_train)
+
+    except Exception as e:
+        raise CreditRiskException("Training", str(e))
 
 
-def train_classifier(X: np.ndarray, y: np.ndarray, version):
-    #3 versions of the model to train here
-    if version == "v0":
-        model = LogisticRegression(
-            C=1, max_iter=82, fit_intercept=True, n_jobs=3, solver="newton-cg", penalty='none'
-        )
-        model.fit(X, y)
 
-    elif version == "v1":
-        model = RandomForestClassifer(
-            ccp_alpha=0.0, min_samples_leaf=1, min_samples_split=2, min_weight_fraction_leaf=0.0, n_estimators=117
-        )
-        model.fit(X, y)
 
-    elif version == "v2":
-        pass
 
-    return model
-
+if __name__ == '__main__':
+    main(sys.argv[1:])
