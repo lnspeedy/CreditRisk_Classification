@@ -1,9 +1,11 @@
 # references
 # https://pydantic-docs.helpmanual.io/usage/validators/
 
+from pickle import load
 import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel, validator
+from fastapi.responses import JSONResponse
 from api.ml.model import CreditRisk_Classifier, CreditRisk_Preprocess_Predict, get_input_column_names
 from api.config import Settings
 import uvicorn
@@ -84,18 +86,18 @@ async def predict_risk(client: ClientProfile):
     ]
 
     # load input data in a dataframe
+    # // TODO - get_input_column_names not defined 
     df_input = pd.DataFrame(data_in, columns=get_input_column_names())
-
-    # preprocess the entry
-    preprocess_pipe = CreditRisk_Preprocess_Predict(df_input)
 
     # prepare features to be passed to the classifier based on the model version
     if model_version.lower() == "v0":
+        preprocess_pipe = CreditRisk_Preprocess_Predict(use_scaler=True) # load preprocess pipe
         # do a scaling on numerical inputs
-        X_input = preprocess_pipe.prepare_input_features()
+        X_input = preprocess_pipe.prepare_input_features(df_input)
     else:
+        preprocess_pipe = CreditRisk_Preprocess_Predict(use_scaler=False) # load preprocess pipe
         # no scaling on the numerical inputs
-        X_input = preprocess_pipe.prepare_input_features()
+        X_input = preprocess_pipe.prepare_input_features(df_input)
 
     # init classifier object
     classifier = CreditRisk_Classifier()
@@ -108,6 +110,22 @@ async def predict_risk(client: ClientProfile):
     probability = loaded_model.predict_proba(data_in).max()
 
     return {"prediction": prediction[0], "probability": probability}
+
+
+# '# model performances
+# @app.get("/model_performances")
+# async def model_performances():
+
+#     # load model 
+#     model = CreditRisk_Classifier().load_model()
+
+#     # recup test data 
+#     X_test = load_test()
+
+#     # perf on test data 
+#     accuracy = 
+
+#     return JSONResponse(status_code=200, content={'response': accuracy})'
 
 if __name__ == '__main__':
     uvicorn.run(app, workers=1, host=settings.host, port=settings.memory_port)
