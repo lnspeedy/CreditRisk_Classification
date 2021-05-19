@@ -20,12 +20,7 @@ def download_feed(target_folder):
 
     except Exception as e:
         print("Failed download :", e)
-0
-      
-    
+          
 if __name__ == '__main__':
-    env = os.getenv('Var_env')
-    target_folder = env
+    target_folder = os.getenv('Var_env') 
     download_feed(target_folder)
-
-
