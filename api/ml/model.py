@@ -67,9 +67,9 @@ class CreditRisk_Classifier:
     def save(self):
         if self._model is not None:
             # save the old model first before pushing the new file
-            key_model_historic = self._model_path.split(".")[0]
-            date, hour = str(datetime.datetime.now()).split()
-            filename_hist = f"{key_model_historic}_{date}_{hour}.pkl"
+            #key_model_historic = self._model_path.split(".")[0]
+            #date, hour = str(datetime.datetime.now()).split()
+            #filename_hist = f"{key_model_historic}_{date}_{hour}.pkl"
 
             # push the model in the disk using the model path
             with open(self._model_path, "wb") as file:

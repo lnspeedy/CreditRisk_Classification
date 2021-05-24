@@ -2,13 +2,12 @@ import sys
 import numpy as np
 import pandas as pd
 from absl import flags
-from .ml.preprocess import CreditRiskException, CreditRisk_Preprocess_Predict
+from ..config import Settings
+from .ml.preprocess import CreditRiskException, CreditRisk_Preprocess_Train
 from .ml.model import CreditRisk_Classifier
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('model_version', None, 'version of the classifier to train')
-flags.DEFINE_string('train_file', None, 'train file path.')
-flags.DEFINE_string('test_file', None, 'test file path.')
 
 FLAGS(sys.argv)
 
@@ -17,18 +16,31 @@ def main(*args):
     try:
         if not FLAGS.model_version:
             raise ValueError('You must supply the model version with --model_version')
-        if not FLAGS.train_file:
-            raise ValueError('You must supply a train directory path with --train_file')
-        if not FLAGS.test_file:
-            raise ValueError('You must supply a train directory path with --test_file')
 
-        df_train = pd.read_csv(FLAGS.train_file)
-        df_test = pd.read_csv(FLAGS.test_file)
+        model_version = FLAGS.model_version.lower()
+
+        if model_version == "v1":
+            use_scaler = True
+        elif model_version in ["v2", "v3"]:
+            use_scaler = False
+        else:
+            raise ValueError('Your model version should be v0, v1 or v2')
+
+        settings = Settings()
+        train_file = settings.training_data_folder + "/train.csv"
+        test_file = settings.training_data_folder + "/test.csv"
+        df_train = pd.read_csv(train_file)
+        df_test = pd.read_csv(test_file)
 
         #Preprocess the entries
-        preprocess_pipe_train = CreditRisk_Preprocess_Predict(df_train)
-        preprocess_pipe_test = CreditRisk_Preprocess_Predict(df_test)
-        df_train_prep = preprocess_pipe_train.prepare_input_features()
+        #Preprocess train à utiliser, mettre que le flag model , entraîner le Preprocess Train
+        #Chemins dans le config
+        #historic non nécessaire
+
+        preprocess_pipe_train = CreditRisk_Preprocess_Train(use_scaler)
+        #preprocess_pipe_train.training_data_folder = settings.training_data_folder
+        preprocess_pipe_test = CreditRisk_Preprocess_Train(df_test)
+        df_train_prep = preprocess_pipe_train.prepare_training_features()
         df_test_prep = preprocess_pipe_test.prepare_input_features()
         y_train = df_train_prep['class']
         X_train = df_train_prep.drop(columns=['class'])
@@ -40,7 +52,7 @@ def main(*args):
         model.train(X_train, y_train)
 
     except Exception as e:
-        raise CreditRiskException("Training", str(e))
+        raise CreditRiskException("Training workflow", str(e))
 
 
 
