@@ -1,6 +1,9 @@
 import json
+import sys
 
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.impute import SimpleImputer
+import pandas as pd
 
 ##################################################
 # CATCH ERRORS
@@ -24,65 +27,6 @@ class CreditRiskException(Exception):
 ##################################################
 # PREPROCESS TRANSFORMERS
 ##################################################
-# todo
-# 1. remove class column if it exists
-# 2. apply data type of columns
-# 3. extract new features
-# 4. handle unknown values
-# 6. Imputer
-
-# 7. normalize numerical features
-# 8. create pipeline for each models
-
-# cat and num encoder
-
-# Remove target column
-class RemoveTargetColumn(BaseEstimator, TransformerMixin):
-    def __init__(self, attribute_names):
-        self.attribute_names = attribute_names
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X):
-        return X[self.attribute_names].values
-
-
-# Apply data types on columns
-class RemoveTargetColumn(BaseEstimator, TransformerMixin):
-    def __init__(self, add_bedrooms_per_room=True):  # no *args or **kargs
-        self.add_bedrooms_per_room = add_bedrooms_per_room
-
-    def fit(self, X, y=None):
-        return self  # nothing else to do
-
-    def transform(self, X):
-        return
-
-
-# Extract new features
-class RemoveTargetColumn(BaseEstimator, TransformerMixin):
-    def __init__(self, add_bedrooms_per_room=True):  # no *args or **kargs
-        self.add_bedrooms_per_room = add_bedrooms_per_room
-
-    def fit(self, X, y=None):
-        return self  # nothing else to do
-
-    def transform(self, X):
-        return
-
-
-# Handle unknown values
-class RemoveTargetColumn(BaseEstimator, TransformerMixin):
-    def __init__(self, add_bedrooms_per_room=True):  # no *args or **kargs
-        self.add_bedrooms_per_room = add_bedrooms_per_room
-
-    def fit(self, X, y=None):
-        return self  # nothing else to do
-
-    def transform(self, X):
-        return
-
 
 # Create a class to select numerical or categorical columns
 class DataFrameSelector(BaseEstimator, TransformerMixin):
@@ -93,28 +37,27 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        return X[self.attribute_names].values
+        return X[self.attribute_names]
 
+# Extract new features
+class ExtractClientProfile(BaseEstimator, TransformerMixin):
+    
+    def fit(self, X, y=None):
+        return self  # nothing else to do
 
-# Imputer
-class DataFrameSelector(BaseEstimator, TransformerMixin):
-    def __init__(self, attribute_names):
-        self.attribute_names = attribute_names
+    def transform(self, X):
+        # extract client sex and matrimonial status
+        X[['sex', 'status_matrimonial']] = X['personal_status'].str.split(" ", expand = True)
+        
+        # drop the personnal_status columns 
+        del X['personal_status']
+        
+        return X
+
+class DataFrameValues(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y=None):
         return self
 
     def transform(self, X):
-        return X[self.attribute_names].values
-
-
-# encoding
-class DataFrameSelector(BaseEstimator, TransformerMixin):
-    def __init__(self, attribute_names):
-        self.attribute_names = attribute_names
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X):
-        return X[self.attribute_names].values
+        return X.values 

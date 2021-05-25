@@ -13,3 +13,4 @@ class Settings(BaseSettings):
     preprocess_pipe_folder: str
 
 settings = Settings()
+

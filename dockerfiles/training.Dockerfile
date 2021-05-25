@@ -12,4 +12,4 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /api
 EXPOSE 80
 
-CMD ["uvicorn", "app.main:app", "--reload", "--workers", "1", "--host", "0.0.0.0", "--port", "80"]
+CMD python3 workflow_training.py

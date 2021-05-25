@@ -18,11 +18,10 @@ class CreditRisk_Classifier:
                        "v2": parent_path / "classifier_v2.pkl"}
         self._model_path = self._paths[version]
 
-        #self.load()
-        #self._model_name = "logistic_regression"
 
     def train(self, X: np.ndarray, y: np.ndarray):
         if self._model is None:
+
 
             # 3 versions of the model to train here
             if self._version == "v0":
@@ -67,6 +66,7 @@ class CreditRisk_Classifier:
     def save(self):
         if self._model is not None:
             # save the old model first before pushing the new file
+
             #key_model_historic = self._model_path.split(".")[0]
             #date, hour = str(datetime.datetime.now()).split()
             #filename_hist = f"{key_model_historic}_{date}_{hour}.pkl"
