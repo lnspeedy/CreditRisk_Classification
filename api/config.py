@@ -12,5 +12,5 @@ class Settings(BaseSettings):
     model_folder: str
     preprocess_pipe_folder: str
 
-settings = Settings()
+#settings = Settings()
 

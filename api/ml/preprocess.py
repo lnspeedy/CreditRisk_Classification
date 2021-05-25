@@ -48,7 +48,7 @@ def get_num_columns():
 
 class CreditRisk_Preprocess:
     def __init__(self):
-        self.training_data_folder = ""
+        self.training_data_folder = "datafeed/data"
         self.model_folder = ""
         self.columns_type = {
             "checking_status": "str",
@@ -125,7 +125,7 @@ class CreditRisk_Preprocess_Train(CreditRisk_Preprocess):
 
         try:
             # data path
-            path_data = os.path.join(self.training_data_folder, "credit_data.csv")
+            path_data = os.path.join(self.training_data_folder, "train.csv")
 
             # load data in a dataframe
             df_train = pd.read_csv(

@@ -4,8 +4,9 @@ from pathlib import Path
 import numpy as np
 import datetime
 from sklearn.datasets import load_boston
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
-from sklearn.ensemble import RandomForestClassifier, LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 
 
 class CreditRisk_Classifier:
@@ -28,12 +29,12 @@ class CreditRisk_Classifier:
                 model = LogisticRegression()
                 params = {'penalty': ['none'],
                           'C': [1,0],
-                          'max_iter': 82,
+                          'max_iter': [82,83],
                           'solver' : ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']
                          }
 
             elif self._version == "v1":
-                model = RandomForestClassifer()
+                model = RandomForestClassifier()
                 params = {'n_estimators' : range(105, 120),
                           'ccp_alpha': np.linspace(0, 2, 10),
                           'min_samples_split': [2],
@@ -49,8 +50,8 @@ class CreditRisk_Classifier:
             self.save()
 
 
-    def best_model(self, X, y, model, params, cv=5, njobs=-1):
-        gs = GridSearchCV(model, params, cv=cv, njobs=njobs)
+    def best_model(self, X, y, model, params, cv=5, n_jobs=-1):
+        gs = GridSearchCV(model, params, cv=cv, n_jobs=n_jobs)
         fitted_model = gs.fit(X,y)
         return gs.best_estimator_
 
@@ -73,7 +74,7 @@ class CreditRisk_Classifier:
 
             # push the model in the disk using the model path
             with open(self._model_path, "wb") as file:
-                pickle.dump(self._model, self._model_path)
+                pickle.dump(self._model, file)
         else:
             raise TypeError("The model is not trained yet, use .train() before saving")
 
@@ -88,9 +89,9 @@ class CreditRisk_Classifier:
         return self
 
 
-model_path = Path(__file__).parent / "classifier.pkl"
-n_features = load_boston(return_X_y=True)[0].shape[1]
-model = CreditRisk_Classifier(model_path)
+#model_path = Path(__file__).parent / "classifier.pkl"
+#n_features = load_boston(return_X_y=True)[0].shape[1]
+#model = CreditRisk_Classifier(model_path)
 
 
 def get_model():

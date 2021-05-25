@@ -2,8 +2,9 @@ import sys
 import numpy as np
 import pandas as pd
 from absl import flags
+from pydantic import Field
 from api.config import Settings
-from api.ml.preprocess import CreditRiskException, CreditRisk_Preprocess_Train
+from api.ml.preprocess import CreditRiskException, CreditRisk_Preprocess_Train, CreditRisk_Preprocess_Predict
 from api.ml.model import CreditRisk_Classifier
 
 FLAGS = flags.FLAGS
@@ -19,14 +20,15 @@ def main(*args):
 
         model_version = FLAGS.model_version.lower()
 
-        if model_version == "v1":
+        if model_version == "v0":
             use_scaler = True
-        elif model_version in ["v2", "v3"]:
+        elif model_version in ["v1", "v2"]:
             use_scaler = False
         else:
             raise ValueError('Your model version should be v0, v1 or v2')
+        
 
-        settings = Settings()
+        settings = Settings(host= 'h', port=1, training_data_folder='datafeed/data', model_folder='', preprocess_pipe_folder='')
         train_file = settings.training_data_folder + "/train.csv"
         test_file = settings.training_data_folder + "/test.csv"
         df_train = pd.read_csv(train_file)
@@ -39,17 +41,20 @@ def main(*args):
 
         preprocess_pipe_train = CreditRisk_Preprocess_Train(use_scaler)
         #preprocess_pipe_train.training_data_folder = settings.training_data_folder
-        preprocess_pipe_test = CreditRisk_Preprocess_Train(df_test)
+        preprocess_pipe_test = CreditRisk_Preprocess_Predict(use_scaler)
         df_train_prep = preprocess_pipe_train.prepare_training_features()
-        df_test_prep = preprocess_pipe_test.prepare_input_features()
-        y_train = df_train_prep['class']
-        X_train = df_train_prep.drop(columns=['class'])
-        y_test = df_test_prep['class']
-        X_test = df_test_prep.drop(columns=['class'])
+        df_test_prep = preprocess_pipe_test.prepare_input_features(df_test)
+        y_train = df_train_prep[:,51].toarray()
+        X_train = df_train_prep.toarray()
+        print(y_train.shape)
+        y_test = df_test_prep[:,51].toarray()
+        X_test = df_test_prep.toarray()
 
         #Load the corresponding model to train
         model = CreditRisk_Classifier(FLAGS.model_version)
         model.train(X_train, y_train)
+
+        print('successfully executed')
 
     except Exception as e:
         raise CreditRiskException("Training workflow", str(e))
