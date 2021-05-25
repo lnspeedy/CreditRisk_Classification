@@ -2,9 +2,9 @@ import sys
 import numpy as np
 import pandas as pd
 from absl import flags
-from ..config import Settings
-from .ml.preprocess import CreditRiskException, CreditRisk_Preprocess_Train
-from .ml.model import CreditRisk_Classifier
+from api.config import Settings
+from api.ml.preprocess import CreditRiskException, CreditRisk_Preprocess_Train
+from api.ml.model import CreditRisk_Classifier
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('model_version', None, 'version of the classifier to train')
