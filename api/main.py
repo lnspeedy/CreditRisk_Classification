@@ -6,7 +6,8 @@ import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel, validator
 from fastapi.responses import JSONResponse
-from api.ml.model import CreditRisk_Classifier, CreditRisk_Preprocess_Predict, get_input_column_names
+# from api.ml.model import CreditRisk_Classifier
+from api.ml.preprocess import CreditRisk_Preprocess_Predict, get_input_column_names
 from api.config import Settings
 import uvicorn
 import os
@@ -47,7 +48,7 @@ class ClientProfile(BaseModel):
     model_version: str
 
     @validator("model_version")
-    def check_model_version_value(self, v):
+    def check_model_version_value(cls, v):
         if v not in ["v0", "v1", "v2"]:
             raise ValueError("model_version equal to 'v0', 'v1' or 'v2'")
         return v.lower()
@@ -100,7 +101,8 @@ async def predict_risk(client: ClientProfile):
         X_input = preprocess_pipe.prepare_input_features(df_input)
 
     # init classifier object
-    classifier = CreditRisk_Classifier()
+    classifier = None
+    # classifier = CreditRisk_Classifier()
 
     # load the model saved as a pickle. load model based on the version choosed
     loaded_model = classifier.load_model(model_version)
@@ -135,7 +137,8 @@ async def model_performances(model_version):
         X_input = preprocess_pipe.prepare_input_features(df_test)
 
     # load model 
-    model = CreditRisk_Classifier().load_model()
+    # model = CreditRisk_Classifier().load_model()
+    model = None
 
     # perf on test data 
     accuracy = None
@@ -151,4 +154,4 @@ async def model_performances(model_version):
                                                     })
 
 if __name__ == '__main__':
-    uvicorn.run(app, workers=1, host=settings.host, port=settings.memory_port)
+    uvicorn.run(app, workers=1, host=settings.host, port=settings.port)

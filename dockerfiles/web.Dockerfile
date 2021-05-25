@@ -18,4 +18,4 @@ ENV MODEL_FOLDER "/app/api/ml/models"
 # expose the container at port 80
 EXPOSE 80
 
-CMD ["uvicorn", "app.main:app", "--reload", "--workers", "1", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "api.main:app", "--reload", "--workers", "1", "--host", "0.0.0.0", "--port", "80"]
