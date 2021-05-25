@@ -10,6 +10,35 @@ from api.config import Settings
 # use utf-8 as the encoding
 encoding = "utf-8"
 
+# init app settings 
+settings = Settings()
+
+def get_input_column_names():
+    """ Method to get all colummns for the credit risk dataset """
+
+    columns = [
+        "checking_status",
+        "employment",
+        "credit_history",
+        "purpose",
+        "personal_status",
+        "other_parties",
+        "property_magnitude",
+        "other_payment_plans",
+        "housing",
+        "job",
+        "own_telephone",
+        "foreign_worker",
+        "savings_status",
+        "duration",
+        "credit_amount",
+        "installment_commitment",
+        "residence_since",
+        "age",
+        "existing_credits",
+        "num_dependents"
+    ]
+
 def get_cat_columns():
     """ Method to get all categorical colummns for the credit risk dataset """
 
@@ -42,14 +71,14 @@ def get_num_columns():
         "residence_since",
         "age",
         "existing_credits",
-        "num_dependents",
+        "num_dependents"
     ]
     return columns_num
 
 class CreditRisk_Preprocess:
     def __init__(self):
-        self.training_data_folder = ""
-        self.model_folder = ""
+        self.data_folder = settings.data_folder
+        self.model_folder = settings.model_folder
         self.columns_type = {
             "checking_status": "str",
             "employment": "str",
@@ -118,14 +147,12 @@ class CreditRisk_Preprocess_Train(CreditRisk_Preprocess):
         self.use_scaler = use_scaler
         super().__init__()
         
-        print(self.training_data_folder)
-
     def load_training_data(self):
         """ Method to load credit risk dataset for further processing """
 
         try:
             # data path
-            path_data = os.path.join(self.training_data_folder, "credit_data.csv")
+            path_data = os.path.join(self.data_folder, "train.csv")
 
             # load data in a dataframe
             df_train = pd.read_csv(
@@ -174,7 +201,6 @@ class CreditRisk_Preprocess_Predict(CreditRisk_Preprocess):
         super().__init__()
 
     def _load_preprocess_pipe(self):
-
         try:
             # get the preprocess pipeline path
             file_tag = 'scaled' if self.use_scaler else 'unscaled' # extract a file tag based on the preprocessing needed
@@ -194,3 +220,23 @@ class CreditRisk_Preprocess_Predict(CreditRisk_Preprocess):
         df_input_features = preprocess_pipe.transform(df_input)
 
         return df_input_features
+
+    def load_test_data(self):
+        """ Method to load test credit risk dataset for further processing """
+
+        try:
+            # data path
+            path_data = os.path.join(self.data_folder, "test.csv")
+
+            # load data in a dataframe
+            df_test = pd.read_csv(
+                path_data, encoding=encoding, na_values=self.missing_values
+            )
+
+            # update columns data type
+            df_test = df_test.astype(self.columns_type)
+
+        except Exception as e:
+            raise CreditRiskException("load_test_data", str(e))
+
+        return df_test

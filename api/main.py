@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from api.ml.model import CreditRisk_Classifier, CreditRisk_Preprocess_Predict, get_input_column_names
 from api.config import Settings
 import uvicorn
+import os
 
 # create fastapi app
 app = FastAPI(
@@ -86,7 +87,6 @@ async def predict_risk(client: ClientProfile):
     ]
 
     # load input data in a dataframe
-    # // TODO - get_input_column_names not defined 
     df_input = pd.DataFrame(data_in, columns=get_input_column_names())
 
     # prepare features to be passed to the classifier based on the model version
@@ -112,20 +112,43 @@ async def predict_risk(client: ClientProfile):
     return {"prediction": prediction[0], "probability": probability}
 
 
-# '# model performances
-# @app.get("/model_performances")
-# async def model_performances():
+# model performances
+@app.get("/model_performances/{model_version}")
+async def model_performances(model_version):
+    
+    # check the value of the version 
+    if model_version.lower() not in ["v0", "v1", "v2"]:
+        raise ValueError("model_version equal to 'v0', 'v1' or 'v2'")
 
-#     # load model 
-#     model = CreditRisk_Classifier().load_model()
+    # prepare features to be passed to the classifier based on the model version
+    if model_version.lower() == "v0":
+        preprocess_pipe = CreditRisk_Preprocess_Predict(use_scaler=True) # load preprocess pipe
+        # test data
+        df_test = preprocess_pipe.load_test_data()
+        # do a scaling on numerical inputs
+        X_input = preprocess_pipe.prepare_input_features(df_test)
+    else:
+        preprocess_pipe = CreditRisk_Preprocess_Predict(use_scaler=False) # load preprocess pipe
+        # test data
+        df_test = preprocess_pipe.load_test_data()
+        # no scaling on the numerical inputs
+        X_input = preprocess_pipe.prepare_input_features(df_test)
 
-#     # recup test data 
-#     X_test = load_test()
+    # load model 
+    model = CreditRisk_Classifier().load_model()
 
-#     # perf on test data 
-#     accuracy = 
+    # perf on test data 
+    accuracy = None
+    precision = None
+    recall = None
+    model_name = None
 
-#     return JSONResponse(status_code=200, content={'response': accuracy})'
+    return JSONResponse(status_code=200, content={'model_version': model_version,
+                                                    'model_name': model_name,
+                                                    'accuracy': accuracy,
+                                                    'precision': precision,
+                                                    'recall': recall
+                                                    })
 
 if __name__ == '__main__':
     uvicorn.run(app, workers=1, host=settings.host, port=settings.memory_port)
