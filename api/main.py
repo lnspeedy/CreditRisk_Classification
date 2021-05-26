@@ -6,7 +6,7 @@ import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel, validator
 from fastapi.responses import JSONResponse
-# from api.ml.model import CreditRisk_Classifier
+from api.ml.model import CreditRisk_Classifier
 from api.ml.preprocess import CreditRisk_Preprocess_Predict, get_input_column_names
 from api.config import Settings
 import uvicorn
@@ -101,8 +101,8 @@ async def predict_risk(client: ClientProfile):
         X_input = preprocess_pipe.prepare_input_features(df_input)
 
     # init classifier object
-    classifier = None
-    # classifier = CreditRisk_Classifier()
+    
+    classifier = CreditRisk_Classifier()
 
     # load the model saved as a pickle. load model based on the version choosed
     loaded_model = classifier.load_model(model_version)
@@ -137,8 +137,8 @@ async def model_performances(model_version):
         X_input = preprocess_pipe.prepare_input_features(df_test)
 
     # load model 
-    # model = CreditRisk_Classifier().load_model()
-    model = None
+    model = CreditRisk_Classifier().load_model()
+    
 
     # perf on test data 
     accuracy = None
