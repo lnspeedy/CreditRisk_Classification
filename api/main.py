@@ -6,7 +6,9 @@ import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel, validator
 from fastapi.responses import JSONResponse
-# from api.ml.model import CreditRisk_Classifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+
+from api.ml.model import CreditRisk_Classifier
 from api.ml.preprocess import CreditRisk_Preprocess_Predict, get_input_column_names
 from api.config import Settings
 import uvicorn
@@ -49,9 +51,31 @@ class ClientProfile(BaseModel):
 
     @validator("model_version")
     def check_model_version_value(cls, v):
-        if v not in ["v0", "v1", "v2"]:
-            raise ValueError("model_version equal to 'v0', 'v1' or 'v2'")
+        if v not in ["v0", "v1", "v2", "v3"]:
+            raise ValueError("model_version equal to 'v0', 'v1', 'v2', 'v3'")
         return v.lower()
+
+@app.get("/healthcheck")
+def healthcheck():
+    # check that the model and preprocess files exist
+    try:
+        # check files
+        check_files = ["classifier_v0.pkl", "classifier_v1.pkl", "classifier_v2.pkl", "classifier_v3.pkl"
+                    , "preprocess_pipe_scaled.pkl", "preprocess_pipe_unscaled.pkl"]
+                    
+        for m in check_files:
+            # check preprocess files
+            file_path = os.path.join(settings.model_folder, m)
+            check_file = os.path.isfile(file_path) # check if the file exists 
+
+            if not check_file:
+                # error 500
+                return JSONResponse(status_code=503, content={"status": "unhealthy", "message": f"File {m} can't be loaded"})
+
+        return JSONResponse(status_code=200, content={"status": "healthy"})
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "unhealthy", "error": e})
 
 @app.post("/predict")
 async def predict_risk(client: ClientProfile):
@@ -101,17 +125,22 @@ async def predict_risk(client: ClientProfile):
         X_input = preprocess_pipe.prepare_input_features(df_input)
 
     # init classifier object
-    classifier = None
-    # classifier = CreditRisk_Classifier()
+    classifier = CreditRisk_Classifier(model_version)
 
     # load the model saved as a pickle. load model based on the version choosed
-    loaded_model = classifier.load_model(model_version)
+    loaded_model = classifier.load_model()
 
     # get the class and probability using the model
     prediction = loaded_model.predict(X_input)
     probability = loaded_model.predict_proba(data_in).max()
 
-    return {"prediction": prediction[0], "probability": probability}
+    # prediction message
+    if prediction[0] == 0:
+        message_predict = "good"
+    else:
+        message_predict = "bad"
+
+    return JSONResponse(status_code=200, content={"prediction": message_predict, "probability": probability})
 
 
 # model performances
@@ -129,25 +158,28 @@ async def model_performances(model_version):
         df_test = preprocess_pipe.load_test_data()
         # do a scaling on numerical inputs
         X_input = preprocess_pipe.prepare_input_features(df_test)
+        y_test = df_test['class'].to_numpy()
     else:
         preprocess_pipe = CreditRisk_Preprocess_Predict(use_scaler=False) # load preprocess pipe
         # test data
         df_test = preprocess_pipe.load_test_data()
         # no scaling on the numerical inputs
         X_input = preprocess_pipe.prepare_input_features(df_test)
+        y_test = df_test['class'].to_numpy()
 
     # load model 
-    # model = CreditRisk_Classifier().load_model()
-    model = None
+    model = CreditRisk_Classifier(model_version).load_model()
+    
+    # get the predictions 
+    y_predicts = model.predict(X_input)
 
     # perf on test data 
-    accuracy = None
-    precision = None
-    recall = None
-    model_name = None
+    accuracy = accuracy_score(y_test, y_predicts)
+    precision = precision_score(y_test, y_predicts)
+    recall = recall_score(y_test, y_predicts)
 
     return JSONResponse(status_code=200, content={'model_version': model_version,
-                                                    'model_name': model_name,
+                                                    'model_name': model.model_name[model_version],
                                                     'accuracy': accuracy,
                                                     'precision': precision,
                                                     'recall': recall

@@ -1,4 +1,4 @@
-FROM python:3.7-slim-buster
+FROM python:3.8-slim-buster
 RUN apt-get update && apt-get install -y python3-dev build-essential
 
 COPY . /app
@@ -15,7 +15,5 @@ ENV PORT "80"
 ENV DATA_FOLDER "/app/datafeed/data" 
 ENV MODEL_FOLDER "/app/api/ml/models"
 
-# expose the container at port 80
-EXPOSE 80
-
-CMD python3 workflow_training.py
+# launch trainings
+CMD bash launch_training.sh

@@ -9,3 +9,4 @@ pandas==1.2.4
 numpy==1.20.2
 sklearn
 absl-py==0.12.0
+xgboost==1.4.2

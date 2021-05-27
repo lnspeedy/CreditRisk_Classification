@@ -1,7 +1,13 @@
-# Training env variables 
-export PORT=
-export DATA_FOLDER=
-export HOST=
-export MODEL_FOLDER=
+#!/usr/bin/env bash
 
-python3 api/workflow_training.py
+# train v0 model 
+# python3 api/workflow_training.py -model_version "v0"
+
+# train v1 model
+# python3 api/workflow_training.py -model_version "v1"
+
+# train v2 model 
+python3 api/workflow_training.py -model_version "v2"
+
+# train v3 model 
+# python3 api/workflow_training.py -model_version "v3"

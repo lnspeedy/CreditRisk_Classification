@@ -55,7 +55,6 @@ def get_cat_columns():
         "job",
         "own_telephone",
         "foreign_worker",
-        "class",
         "savings_status"
     ]
     return columns_cat
@@ -186,7 +185,7 @@ class CreditRisk_Preprocess_Train(CreditRisk_Preprocess):
         except Exception as e:
             raise CreditRiskException("prepare_training_features", str(e))
 
-        return df_preprocess_train
+        return df_preprocess_train, df_train[['class']]
 
     def _save_preprocess_pipeline(self, pipe_obj, file_name):
         """ Method to save the preprocessing pipeline """

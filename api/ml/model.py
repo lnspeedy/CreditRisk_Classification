@@ -1,22 +1,31 @@
+import os
 import pickle
-from pathlib import Path
-
 import numpy as np
-import datetime
-from sklearn.datasets import load_boston
+from api.config import Settings
+from xgboost import XGBClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from api.ml.preprocess import CreditRiskException
 
+# init app settings
+settings = Settings()
 
 class CreditRisk_Classifier:
     def __init__(self, version: str = "v0"):
         self._model = None
         self._version = version
-        parent_path = Path(__file__).parent
-        self._paths = {"v0": parent_path / "classifier_v0.pkl",
-                       "v1": parent_path / "classifier_v1.pkl",
-                       "v2": parent_path / "classifier_v2.pkl"}
+        model_folder = settings.model_folder
+        self.model_name = {"v0": "LogisticRegression",
+                       "v1": "RandomForestClassifier",
+                       "v2": "XGBClassifier",
+                       "v3": "VotingClassifier"}
+
+        self._paths = {"v0": os.path.join(model_folder, "classifier_v0.pkl"),
+                       "v1": os.path.join(model_folder, "classifier_v1.pkl"),
+                       "v2": os.path.join(model_folder, "classifier_v2.pkl"),
+                       "v3": os.path.join(model_folder, "classifier_v3.pkl")}
+
         self._model_path = self._paths[version]
 
     def train(self, X: np.ndarray, y: np.ndarray):
@@ -24,26 +33,56 @@ class CreditRisk_Classifier:
 
             # 3 versions of the model to train here
             if self._version == "v0":
-                model = LogisticRegression()
-                params = {'penalty': ['none'],
+                lr = LogisticRegression()
+                paramsLR = {'penalty': ['none'],
                           'C': [1,0],
                           'max_iter': [82,83],
                           'solver' : ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']
                          }
+                self._model = self.best_model(X, y, lr, paramsLR)
 
             elif self._version == "v1":
-                model = RandomForestClassifier()
-                params = {'n_estimators' : range(105, 120),
-                          'ccp_alpha': np.linspace(0, 2, 10),
-                          'min_samples_split': [2],
-                          'min_samples_leaf' : [1],
-                          'min_weight_fraction_leaf' : np.linspace(0, 5, 15)
-                         }
+                rf = RandomForestClassifier()
+            
+                paramsRF = {'n_estimators' : range(115, 120),
+                            'ccp_alpha': np.linspace(0,1,5),
+                            'min_samples_split': range(1,4),
+                            'min_samples_leaf': range(1,3),
+                            'min_weight_fraction_leaf': np.linspace(0, 2, 3)
+                           }
+
+                self._model = self.best_model(X, y, rf, paramsRF)
 
             elif self._version == "v2":
-                pass
+                xgb = XGBClassifier()
+                paramsXGB = {'learning_rate': np.linspace(0, 1, 5),
+                             'base_score': np.linspace(0, 1, 5),
+                             'gamma': range(0, 2),
+                             'max_depth': range(2, 4),
+                             'n_estimator': range(97, 100)
+                            }
+            
+                self._model = self.best_model(X, y, xgb, paramsXGB)
+            
+            elif self._version == "v3":
+                #Voting classifier uses models v0 to v1
+                try:
+                    with open(self._paths['v0'], "rb") as file:
+                        lr = pickle.load(file)
+                    with open(self._paths['v1'], "rb") as file:
+                        rf = pickle.load(file)
+                    with open(self._paths['v2'], "rb") as file:
+                        xgb = pickle.load(file)
+                    
+                    self._model = VotingClassifier([('XGBoost', xgb), ('RandomForest', rf),
+                                           ('LogisticReg', lr)], voting='soft')
+                    
+                    self._model.fit(X,y)
 
-            self._model = self.best_model(X, y, model, params)
+                except Exception as e: 
+                    raise CreditRiskException("One or more version(s) have not been trained yet. Run the workflow_training script to train all versions first", str(e))
+            
+            #If a model was trained, save it 
             self.save()
 
     def best_model(self, X, y, model, params, cv=5, n_jobs=-1):
@@ -59,24 +98,20 @@ class CreditRisk_Classifier:
 
     def save(self):
         if self._model is not None:
-            # save the old model first before pushing the new file
-
-            #key_model_historic = self._model_path.split(".")[0]
-            #date, hour = str(datetime.datetime.now()).split()
-            #filename_hist = f"{key_model_historic}_{date}_{hour}.pkl"
-
-            # push the model in the disk using the model path
+            # push the model in the disk using the model path, overwrite any old version 
             with open(self._model_path, "wb") as file:
                 pickle.dump(self._model, file)
         else:
             raise TypeError("The model is not trained yet, use .train() before saving")
 
-    def load_model(self, version: str):
+    def load_model(self):
         try:
-            file_name = self._paths[version]
+            file_name = self._paths[self._version]
             with open(file_name, "rb") as file:
                 # load the pickle
                 self._model = pickle.load(file)
-        except:
-            self._model = None
+
+        except Exception as e:
+            raise CreditRiskException("This version has not been trained yet. Run the workflow_training script to train that version first", str(e))
+            
         return self
