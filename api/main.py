@@ -27,27 +27,27 @@ settings = Settings()
 
 # user input templates 
 class ClientProfile(BaseModel):
-    checking_status: str
-    duration: int
-    credit_history: str
-    purpose: str
-    credit_amount: float
-    savings_status: str
-    employment: str
-    installment_commitment: int
-    personal_status: str
-    other_parties: str
-    residence_since: int
-    property_magnitude: str
-    age: int
-    other_payment_plans: str
-    housing: str
-    existing_credits: int
-    job: str
-    num_dependents: int
-    own_telephone: str
-    foreign_worker: str
-    model_version: str
+    checking_status: str = "<0"
+    duration: int = 18
+    credit_history: str = "existing paid"
+    purpose: str = "new car"
+    credit_amount: float = 4380
+    savings_status: str = "100<=X<500"
+    employment: str = "1<=X<4"
+    installment_commitment: int = 3
+    personal_status: str = "male single"
+    other_parties: str = "none"
+    residence_since: int = 4
+    property_magnitude: str = "car"
+    age: int = 35
+    other_payment_plans: str = "none"
+    housing: str = "own"
+    existing_credits: int = 1
+    job: str = "unskilled resident"
+    num_dependents: int = 2
+    own_telephone: str = "yes"
+    foreign_worker: str = "yes"
+    model_version: str = "v0"
 
     @validator("model_version")
     def check_model_version_value(cls, v):
@@ -86,33 +86,31 @@ async def predict_risk(client: ClientProfile):
     model_version = data["model_version"]
 
     # store the list of list
-    data_in = [
-        [
-            data["checking_status"],
-            data["duration"],
-            data["credit_history"],
-            data["purpose"],
-            data["credit_amount"],
-            data["savings_status"],
-            data["employment"],
-            data["installment_commitment"],
-            data["personal_status"],
-            data["other_parties"],
-            data["residence_since"],
-            data["property_magnitude"],
-            data["age"],
-            data["other_payment_plans"],
-            data["housing"],
-            data["existing_credits"],
-            data["job"],
-            data["num_dependents"],
-            data["own_telephone"],
-            data["foreign_worker"],
-        ]
-    ]
+    data_input_dict = {
+        "checking_status": data["checking_status"],
+        "duration": data["duration"],
+        "credit_history": data["credit_history"],
+        "purpose": data["purpose"],
+        "credit_amount": data["credit_amount"],
+        "savings_status": data["savings_status"],
+        "employment": data["employment"],
+        "installment_commitment": data["installment_commitment"],
+        "personal_status": data["personal_status"],
+        "other_parties": data["other_parties"],
+        "residence_since": data["residence_since"],
+        "property_magnitude": data["property_magnitude"],
+        "age": data["age"],
+        "other_payment_plans": data["other_payment_plans"],
+        "housing": data["housing"],
+        "existing_credits": data["existing_credits"],
+        "job": data["job"],
+        "num_dependents": data["num_dependents"],
+        "own_telephone": data["own_telephone"],
+        "foreign_worker": data["foreign_worker"]
+    }
 
     # load input data in a dataframe
-    df_input = pd.DataFrame(data_in, columns=get_input_column_names())
+    df_input = pd.DataFrame([list(data_input_dict.values())], columns=list(data_input_dict.keys()))
 
     # prepare features to be passed to the classifier based on the model version
     if model_version.lower() == "v0":
@@ -132,7 +130,7 @@ async def predict_risk(client: ClientProfile):
 
     # get the class and probability using the model
     prediction = loaded_model.predict(X_input)
-    probability = loaded_model.predict_proba(data_in).max()
+    probability = loaded_model.predict_proba(X_input).max()
 
     # prediction message
     if prediction[0] == 0:
@@ -148,7 +146,7 @@ async def predict_risk(client: ClientProfile):
 async def model_performances(model_version):
     
     # check the value of the version 
-    if model_version.lower() not in ["v0", "v1", "v2"]:
+    if model_version.lower() not in ["v0", "v1", "v2", "v3"]:
         raise ValueError("model_version equal to 'v0', 'v1' or 'v2'")
 
     # prepare features to be passed to the classifier based on the model version
@@ -175,8 +173,8 @@ async def model_performances(model_version):
 
     # perf on test data 
     accuracy = accuracy_score(y_test, y_predicts)
-    precision = precision_score(y_test, y_predicts)
-    recall = recall_score(y_test, y_predicts)
+    precision = precision_score(y_test, y_predicts, average="binary", pos_label="bad")
+    recall = recall_score(y_test, y_predicts, average="binary", pos_label="bad")
 
     return JSONResponse(status_code=200, content={'model_version': model_version,
                                                     'model_name': model.model_name[model_version],

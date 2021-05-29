@@ -35,8 +35,8 @@ class CreditRisk_Classifier:
             if self._version == "v0":
                 lr = LogisticRegression()
                 paramsLR = {'penalty': ['none'],
-                          'C': [1,0],
-                          'max_iter': [82,83],
+                          'C': [1, 0],
+                          'max_iter': [82, 83],
                           'solver' : ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']
                          }
                 self._model = self.best_model(X, y, lr, paramsLR)
