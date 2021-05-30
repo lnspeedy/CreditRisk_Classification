@@ -132,13 +132,7 @@ async def predict_risk(client: ClientProfile):
     prediction = loaded_model.predict(X_input)
     probability = loaded_model.predict_proba(X_input).max()
 
-    # prediction message
-    if prediction[0] == 0:
-        message_predict = "good"
-    else:
-        message_predict = "bad"
-
-    return JSONResponse(status_code=200, content={"prediction": message_predict, "probability": probability})
+    return JSONResponse(status_code=200, content={"prediction": prediction[0], "probability": probability})
 
 
 # model performances
