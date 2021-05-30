@@ -38,6 +38,7 @@ def get_input_column_names():
         "existing_credits",
         "num_dependents"
     ]
+    return columns
 
 def get_cat_columns():
     """ Method to get all categorical colummns for the credit risk dataset """
@@ -110,6 +111,7 @@ class CreditRisk_Preprocess:
             [
                 ("selector", DataFrameSelector(get_cat_columns())),
                 ("extract_new_features", ExtractClientProfile()),
+                ("cat_imputer", SimpleImputer(missing_values=None, strategy='most_frequent')),
                 ("cat_encoder", OneHotEncoder())
             ]
         )
