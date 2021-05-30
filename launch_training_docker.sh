@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # env variables 
-export LOCAL_DATA_FOLDER=/run/desktop/mnt/host/c/a_projets_perso/finance/CreditRisk_Classification/datafeed/data
-export LOCAL_MODEL_FOLDER=/run/desktop/mnt/host/c/a_projets_perso/finance/CreditRisk_Classification/api/ml/models
+export LOCAL_DATA_FOLDER=/run/desktop/home/lnspeedy/Bureau/CreditRisk_Classification-fastapi/datafeed/data
+export LOCAL_MODEL_FOLDER=/run/desktop/home/lnspeedy/Bureau/finance/CreditRisk_Classification/api/ml/models
 
 # build the web app docker container 
 sudo docker build . -f dockerfiles/training.Dockerfile -t training
