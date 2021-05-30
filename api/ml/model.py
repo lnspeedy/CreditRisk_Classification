@@ -2,11 +2,12 @@ import os
 import pickle
 import numpy as np
 from api.config import Settings
-from xgboost import XGBClassifier
+#from xgboost import XGBClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
-from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier, AdaBoostClassifier
 from api.ml.preprocess import CreditRiskException
+from sklearn.svm import SVC
 
 # init app settings
 settings = Settings()
@@ -18,7 +19,7 @@ class CreditRisk_Classifier:
         model_folder = settings.model_folder
         self.model_name = {"v0": "LogisticRegression",
                        "v1": "RandomForestClassifier",
-                       "v2": "XGBClassifier",
+                       "v2": "AdaBoostClassifier",
                        "v3": "VotingClassifier"}
 
         self._paths = {"v0": os.path.join(model_folder, "classifier_v0.pkl"),
@@ -54,15 +55,14 @@ class CreditRisk_Classifier:
                 self._model = self.best_model(X, y, rf, paramsRF)
 
             elif self._version == "v2":
-                xgb = XGBClassifier()
-                paramsXGB = {'learning_rate': np.linspace(0, 1, 5),
-                             'base_score': np.linspace(0, 1, 5),
-                             'gamma': range(0, 2),
-                             'max_depth': range(2, 4),
-                             'n_estimator': range(97, 100)
+                ada = AdaBoostClassifier()
+
+                paramsADA = {'n_estimators': range(72,76),
+                             'algorithm': ['SAMME', 'SAMME.R'],
+                             'learning_rate': np.linspace(0,1,15)
                             }
             
-                self._model = self.best_model(X, y, xgb, paramsXGB)
+                self._model = self.best_model(X, y, ada, paramsADA)
             
             elif self._version == "v3":
                 #Voting classifier uses models v0 to v1
@@ -72,9 +72,9 @@ class CreditRisk_Classifier:
                     with open(self._paths['v1'], "rb") as file:
                         rf = pickle.load(file)
                     with open(self._paths['v2'], "rb") as file:
-                        xgb = pickle.load(file)
+                        ada = pickle.load(file)
                     
-                    self._model = VotingClassifier([('XGBoost', xgb), ('RandomForest', rf),
+                    self._model = VotingClassifier([('AdaBoost', ada), ('RandomForest', rf),
                                            ('LogisticReg', lr)], voting='soft')
                     
                     self._model.fit(X,y)
