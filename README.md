@@ -1,11 +1,12 @@
 NB: This deposit is for my end of study project. You will also find my end of study thesis based on this project.
+[mémoire_final_TENE.pdf](https://github.com/lnspeedy/CreditRisk_Classification/files/7714004/memoire_final_TENE.pdf)
 
 # CreditRisk_Classification
 
   Our Classifier makes it possible to analyze loan data collected by a bank in order to determine whether a customer is able to repay his credit or not. Our dataset consists of 1000 clients with attributes (categorical and numeric). Thanks to our model that we have implemented in the form of an API, we are able to tell if a customer is good or bad with regard to the repayment of his bank loan. And this has been possible thanks to the different machine learning models. The ones we have chosen for production are: random forest, logistic regression and Adaboost.
 Throughout this repo, we will present the different stages of our work to you.
   
-  NB: You will find in this repository a jupyter notebook, in which we have detailed all our different methods and results obtained
+  NB: You will find in this repository a jupyter notebook, in which we have detailed all our different methods and results obtained 
   
  # Dataset
  
