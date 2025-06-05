@@ -24,10 +24,10 @@ def main(*args):
 
         if model_version == "v0":
             use_scaler = True
-        elif model_version in ["v1", "v2", "v3"]:
+        elif model_version in ["v1", "v2", "v3", "v4"]:
             use_scaler = False
         else:
-            raise ValueError('Your model version should be v0, v1, v2 or v3')
+            raise ValueError('Your model version should be v0, v1, v2, v3 or v4')
        
         #Preprocess the entries
         preprocess_pipe_train = CreditRisk_Preprocess_Train(use_scaler)
