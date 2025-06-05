@@ -5,6 +5,7 @@ from api.config import Settings
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier, AdaBoostClassifier
+from xgboost import XGBClassifier
 from api.ml.preprocess import CreditRiskException
 from sklearn.svm import SVC
 
@@ -19,12 +20,14 @@ class CreditRisk_Classifier:
         self.model_name = {"v0": "LogisticRegression",
                        "v1": "RandomForestClassifier",
                        "v2": "AdaBoostClassifier",
-                       "v3": "VotingClassifier"}
+                       "v3": "VotingClassifier",
+                       "v4": "XGBClassifier"}
 
         self._paths = {"v0": os.path.join(model_folder, "classifier_v0.pkl"),
                        "v1": os.path.join(model_folder, "classifier_v1.pkl"),
                        "v2": os.path.join(model_folder, "classifier_v2.pkl"),
-                       "v3": os.path.join(model_folder, "classifier_v3.pkl")}
+                       "v3": os.path.join(model_folder, "classifier_v3.pkl"),
+                       "v4": os.path.join(model_folder, "classifier_v4.pkl")}
 
         self._model_path = self._paths[version]
 
@@ -80,6 +83,17 @@ class CreditRisk_Classifier:
 
                 except Exception as e: 
                     raise CreditRiskException("One or more version(s) have not been trained yet. Run the workflow_training script to train all versions first", str(e))
+
+            elif self._version == "v4":
+                xgb = XGBClassifier(eval_metric="logloss")
+
+                paramsXGB = {
+                    'n_estimators': range(50, 80, 10),
+                    'learning_rate': [0.01, 0.1, 0.2],
+                    'max_depth': [3, 4, 5]
+                }
+
+                self._model = self.best_model(X, y, xgb, paramsXGB)
             
             #If a model was trained, save it 
             self.save()

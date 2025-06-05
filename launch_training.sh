@@ -10,4 +10,7 @@
  python3 api/workflow_training.py -model_version "v2"
 
 # train v3 model 
- python3 api/workflow_training.py -model_version "v3"
+python3 api/workflow_training.py -model_version "v3"
+
+# train v4 model
+python3 api/workflow_training.py -model_version "v4"

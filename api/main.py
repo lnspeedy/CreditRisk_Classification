@@ -51,8 +51,8 @@ class ClientProfile(BaseModel):
 
     @validator("model_version")
     def check_model_version_value(cls, v):
-        if v not in ["v0", "v1", "v2", "v3"]:
-            raise ValueError("model_version equal to 'v0', 'v1', 'v2', 'v3'")
+        if v not in ["v0", "v1", "v2", "v3", "v4"]:
+            raise ValueError("model_version equal to 'v0', 'v1', 'v2', 'v3', 'v4'")
         return v.lower()
 
 @app.get("/healthcheck")
@@ -60,8 +60,15 @@ def healthcheck():
     # check that the model and preprocess files exist
     try:
         # check files
-        check_files = ["classifier_v0.pkl", "classifier_v1.pkl", "classifier_v2.pkl", "classifier_v3.pkl"
-                    , "preprocess_pipe_scaled.pkl", "preprocess_pipe_unscaled.pkl"]
+        check_files = [
+            "classifier_v0.pkl",
+            "classifier_v1.pkl",
+            "classifier_v2.pkl",
+            "classifier_v3.pkl",
+            "classifier_v4.pkl",
+            "preprocess_pipe_scaled.pkl",
+            "preprocess_pipe_unscaled.pkl",
+        ]
                     
         for m in check_files:
             # check preprocess files
@@ -140,8 +147,8 @@ async def predict_risk(client: ClientProfile):
 async def model_performances(model_version):
     
     # check the value of the version 
-    if model_version.lower() not in ["v0", "v1", "v2", "v3"]:
-        raise ValueError("model_version equal to 'v0', 'v1' or 'v2'")
+    if model_version.lower() not in ["v0", "v1", "v2", "v3", "v4"]:
+        raise ValueError("model_version equal to 'v0', 'v1', 'v2', 'v3', 'v4'")
 
     # prepare features to be passed to the classifier based on the model version
     if model_version.lower() == "v0":
